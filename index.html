@@ -1,0 +1,150 @@
+<html>
+<head>
+
+    <script>
+
+        var TM = {
+            debug:true
+            ,debugDetail:5
+            ,log:function(msg,lvl){lvl=lvl||5;if (TM.debug && window["console"] && lvl<=TM.debugDetail){console.log(msg);}}
+            /**
+             * NB: source & target now revered order
+             * TODO: will need to retro fix other functions calling this
+             */
+            ,extend:function (target /*,[source],[source]*/ ){
+                //if(!target){target = this;}
+                var sources = TM.ARRAY.fromCollection(arguments).slice(1);
+                for(var index in sources){
+                    var source = sources[index];
+                    for(var propName in source){
+                        if(source.hasOwnProperty(propName)){
+                            try{
+                                TM.log("applying prop["+propName+"]");
+                                if(typeof(source[propName]) == 'object'){
+                                    if(target[propName] == undefined){target[propName]={};}
+                                    TM.log("recurse into " + propName);
+                                    TM.extend(target[propName], source[propName]);
+                                }else{
+                                    try{target[propName] = source[propName];}catch(exc){TM.log("error:" + exc.message);}
+                                }
+                            }catch(ex){
+                                // ignore errors, uncomment for debugging
+                                TM.log("error extending object: " + ex.message);
+                            }
+                        }
+                    }
+                }
+                return target;
+            }
+            ,DOM:{
+                getElement:function(el){
+                    return (typeof el === "string")?document.getElementById(el):el;
+                }
+                ,createElement:function(tagname,attribs,p){
+                    var el = document.createElement(tagname);
+                    if (attribs){TM.extend(el, attribs);}
+                    if (p) {
+                        p = TM.DOM.getElement(p);
+                        p.appendChild(el);
+                    }
+                    return el;
+                }
+                ,remove: function(el) {
+                    var el = TM.DOM.getElement(el);
+                    el.parentNode.removeChild(el);
+                }
+                /**
+                 * add event handlers to elements
+                 * TM.DOM.addEvent(element,eventType,callbackFunction)
+                 * TM.DOM.addEvent([elements],eventType,callbackFunction)
+                 */
+                ,addEvent:(function( window, document ) {
+                    if ( document.addEventListener ) {
+                        return function( elem, type, cb ) {
+                            if ( (elem && !elem.length) || elem === window ) {
+                                elem.addEventListener(type, cb, false );
+                            }
+                            else if ( elem && elem.length ) {
+                                var len = elem.length;
+                                for ( var i = 0; i < len; i++ ) {
+                                    TM.DOM.addEvent( elem[i], type, cb );
+                                }
+                            }
+                        };
+                    }
+                    else if ( document.attachEvent ) {
+                        return function ( elem, type, cb ) {
+                            if ( (elem && !elem.length) || elem === window ) {
+                                elem.attachEvent( 'on' + type, function() { return cb.call(elem, window.event) } );
+                            }
+                            else if ( elem.length ) {
+                                var len = elem.length;
+                                for ( var i = 0; i < len; i++ ) {
+                                    TM.DOM.addEvent( elem[i], type, cb );
+                                }
+                            }
+                        };
+                    }
+                })( this, document )
+                /**
+                 * John Resigs 2005 event handler function
+                 * can probably be improved
+                 */
+                ,removeEvent:function removeEvent( obj, type, fn ) {
+                    if ( obj.detachEvent ) {
+                        obj.detachEvent( 'on'+type, obj[type+fn] );
+                        obj[type+fn] = null;
+                    } else {
+                        obj.removeEventListener( type, fn, false );
+                    }
+                }
+            }
+            ,ARRAY:{
+                fromCollection:function(collectionObj){
+                    try{
+                        // IE8 has broken this...!
+                        return Array().slice.call(collectionObj);
+                    }catch(ex){
+                        //so we need this
+                        var arr = [];
+                        for(var i = 0; i < collectionObj.length ; i++){
+                            arr.push(collectionObj[i]);
+                        }
+                        return arr;
+                    }
+                }
+            }
+        };
+
+        var handlers = {
+
+        };
+
+        var data = {
+            tagname:"div",
+            style:{
+                backgroundColor:'white'
+                ,border:"3px solid rgba(65, 95, 159, 0.7)"
+                ,borderRadius:"5px 0px 0px 5px"
+                ,borderRight:"none"
+            },
+            childNodes:[{},{},{}]
+        };
+
+
+        function run(){
+
+        }
+
+    </script>
+
+</head>
+
+<body>
+
+<h1>JS Injector test</h1>
+
+<input type="button" value="GO" onclick="run();">
+
+</body>
+</html>
